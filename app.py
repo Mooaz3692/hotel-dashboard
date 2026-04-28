@@ -148,15 +148,53 @@ elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
-    total_rooms = 50
-    occupied = random.randint(20, 40)
-    available = total_rooms - occupied
+    df = st.session_state.data
 
-    c1, c2 = st.columns(2)
-    c1.metric("Occupied Rooms", occupied)
-    c2.metric("Available Rooms", available)
+    # كل الغرف (وهمية)
+    all_rooms = [str(i) for i in range(100, 121)]  # 100 → 120
 
-    st.progress(occupied / total_rooms)
+    # الغرف المحجوزة من الداتا
+    occupied_rooms = df["Room No"].dropna().astype(str).unique()
+
+    room_data = []
+
+    for room in all_rooms:
+        if room in occupied_rooms:
+            status = "Occupied"
+        else:
+            status = "Available"
+
+        room_data.append({
+            "Room No": room,
+            "Status": status
+        })
+
+    rooms_df = pd.DataFrame(room_data)
+
+    # KPIs
+    total = len(rooms_df)
+    occupied = (rooms_df["Status"] == "Occupied").sum()
+    available = (rooms_df["Status"] == "Available").sum()
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric("Total Rooms", total)
+    c2.metric("Occupied", occupied)
+    c3.metric("Available", available)
+
+    # Table
+    st.subheader("Rooms List")
+
+    def color_status(val):
+        if val == "Occupied":
+            return "background-color: #ffcccc"
+        else:
+            return "background-color: #ccffcc"
+
+    st.dataframe(
+        rooms_df.style.applymap(color_status, subset=["Status"]),
+        use_container_width=True
+    )
 
 # ================= PAYMENTS =================
 elif page == "Payments":
