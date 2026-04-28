@@ -6,20 +6,17 @@ st.set_page_config(page_title="Hotel System", layout="wide")
 # ---------------- STYLE ----------------
 st.markdown("""
 <style>
-.main {background-color: #f8fafc;}
+.main {background-color: #f5f7fa;}
 .card {
-    background-color: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
-}
-button {
-    border-radius: 8px !important;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOAD DATA ----------------
+# ---------------- LOAD ----------------
 if "data" not in st.session_state:
     df = pd.read_excel("data.xlsx")
     df.columns = df.columns.str.strip()
@@ -31,61 +28,79 @@ st.title("🏨 Hotel Management System")
 
 # ---------------- KPIs ----------------
 col1, col2, col3 = st.columns(3)
-col1.metric("Bookings", len(df))
-col2.metric("Revenue", int(df["RoomCharge"].sum()))
-col3.metric("Guests", df["Guest Name"].nunique() if "Guest Name" in df.columns else 0)
 
-# ---------------- ADD FORM ----------------
-st.subheader("➕ Add Guest")
+col1.markdown(f"<div class='card'><h4>Total Bookings</h4><h2>{len(df)}</h2></div>", unsafe_allow_html=True)
+col2.markdown(f"<div class='card'><h4>Total Revenue</h4><h2>{int(df['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
+col3.markdown(f"<div class='card'><h4>Guests</h4><h2>{df['Guest Name'].nunique() if 'Guest Name' in df.columns else 0}</h2></div>", unsafe_allow_html=True)
 
-with st.form("add_form"):
-    name = st.text_input("Guest Name")
-    nationality = st.text_input("Nationality")
-    room = st.text_input("Room Type")
+# ---------------- CHARTS ----------------
+c1, c2 = st.columns(2)
+
+with c1:
+    st.subheader("Bookings by Nationality")
+    st.bar_chart(df["Nationality"].value_counts())
+
+with c2:
+    st.subheader("Revenue by Room Type")
+    st.bar_chart(df.groupby("Room Type")["RoomCharge"].sum())
+
+# ---------------- ADD ----------------
+st.subheader("Add Guest")
+
+with st.form("add"):
+    col1, col2, col3 = st.columns(3)
+
+    name = col1.text_input("Guest Name")
+    nat = col2.text_input("Nationality")
+    room = col3.text_input("Room Type")
+
     price = st.number_input("Room Charge", 0)
 
-    submitted = st.form_submit_button("Add")
+    submit = st.form_submit_button("Add Guest")
 
-    if submitted:
-        new_row = {
+    if submit:
+        new = {
             "Guest Name": name,
-            "Nationality": nationality,
+            "Nationality": nat,
             "Room Type": room,
             "RoomCharge": price
         }
-        st.session_state.data = pd.concat(
-            [st.session_state.data, pd.DataFrame([new_row])],
-            ignore_index=True
-        )
-        st.success("Guest added successfully!")
+        st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
 
 # ---------------- TABLE ----------------
-st.subheader("📋 Data")
+st.subheader("Bookings")
 
-selected_row = st.selectbox(
-    "Select Guest to Edit/Delete",
-    df.index
-)
+selected = st.selectbox("Select Record", df.index)
 
 st.dataframe(df, use_container_width=True)
 
-# ---------------- ACTIONS ----------------
-col1, col2, col3 = st.columns(3)
+# ---------------- EDIT ----------------
+st.subheader("Edit Record")
 
-# DELETE
-if col1.button("🗑 Delete"):
-    st.session_state.data = df.drop(index=selected_row).reset_index(drop=True)
-    st.success("Deleted!")
+edit_row = df.loc[selected]
 
-# EDIT
-if col2.button("✏️ Edit (Demo)"):
-    st.warning("Edit simulated فقط 👀")
+with st.form("edit"):
+    col1, col2, col3 = st.columns(3)
 
-# DOWNLOAD
+    name = col1.text_input("Guest Name", edit_row.get("Guest Name", ""))
+    nat = col2.text_input("Nationality", edit_row.get("Nationality", ""))
+    room = col3.text_input("Room Type", edit_row.get("Room Type", ""))
+
+    price = st.number_input("Room Charge", value=int(edit_row.get("RoomCharge", 0)))
+
+    update = st.form_submit_button("Update")
+
+    if update:
+        st.session_state.data.loc[selected, "Guest Name"] = name
+        st.session_state.data.loc[selected, "Nationality"] = nat
+        st.session_state.data.loc[selected, "Room Type"] = room
+        st.session_state.data.loc[selected, "RoomCharge"] = price
+
+# ---------------- DELETE ----------------
+if st.button("Delete Selected"):
+    st.session_state.data = df.drop(index=selected).reset_index(drop=True)
+
+# ---------------- DOWNLOAD ----------------
 csv = df.to_csv(index=False).encode('utf-8')
-col3.download_button(
-    "⬇️ Download Data",
-    csv,
-    "hotel_data.csv",
-    "text/csv"
-)
+
+st.download_button("Download Data", csv, "hotel_data.csv")
