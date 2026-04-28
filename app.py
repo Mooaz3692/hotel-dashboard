@@ -48,10 +48,11 @@ if not st.session_state.logged_in:
 # ---------------- DATA ----------------
 if "data" not in st.session_state:
     df = pd.read_excel("data.xlsx")
-    df.columns = df.columns.str.strip()
-    if "Payment Type" not in df.columns:
-        df["Payment Type"] = "Cash"
-    st.session_state.data = df
+df.columns = df.columns.str.strip()
+
+
+if "Payment Type" not in df.columns:
+    df["Payment Type"] = "Cash"
 
 df = st.session_state.data
 
