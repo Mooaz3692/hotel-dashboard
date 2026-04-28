@@ -50,18 +50,12 @@ if "data" not in st.session_state:
     df = pd.read_excel("data.xlsx")
     df.columns = df.columns.str.strip()
 
-    # تأكيد العمود
     if "Payment Type" not in df.columns:
         df["Payment Type"] = "Cash"
 
     st.session_state.data = df
 
 df = st.session_state.data
-
-# تأكيد تاني بعد كل تعديل
-if "Payment Type" not in df.columns:
-    df["Payment Type"] = "Cash"
-    st.session_state.data = df
 
 # ---------------- NAV ----------------
 col1, col2, col3 = st.columns([4,4,1])
@@ -144,17 +138,13 @@ elif page == "Guests":
     st.dataframe(st.session_state.data, use_container_width=True)
 
 # ================= ROOMS =================
-# ================= ROOMS =================
 elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
     df = st.session_state.data
 
-    # كل الغرف
     all_rooms = [str(i) for i in range(100, 121)]
-
-    # المحجوزة
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
@@ -165,51 +155,21 @@ elif page == "Rooms":
         else:
             status = "🟢 Available"
 
-        room_data.append({
-            "Room No": room,
-            "Status": status
-        })
+        room_data.append({"Room No": room, "Status": status})
 
     rooms_df = pd.DataFrame(room_data)
 
-    # KPIs
     total = len(rooms_df)
     occupied = sum(rooms_df["Status"].str.contains("Occupied"))
     available = sum(rooms_df["Status"].str.contains("Available"))
 
     c1, c2, c3 = st.columns(3)
-
     c1.metric("Total Rooms", total)
     c2.metric("Occupied", occupied)
     c3.metric("Available", available)
 
-    # عرض الجدول بدون style (مهم)
     st.subheader("Rooms List")
     st.dataframe(rooms_df, use_container_width=True)
-    # KPIs
-    total = len(rooms_df)
-    occupied = (rooms_df["Status"] == "Occupied").sum()
-    available = (rooms_df["Status"] == "Available").sum()
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric("Total Rooms", total)
-    c2.metric("Occupied", occupied)
-    c3.metric("Available", available)
-
-    # Table
-    st.subheader("Rooms List")
-
-    def color_status(val):
-        if val == "Occupied":
-            return "background-color: #ffcccc"
-        else:
-            return "background-color: #ccffcc"
-
-    st.dataframe(
-        rooms_df.style.applymap(color_status, subset=["Status"]),
-        use_container_width=True
-    )
 
 # ================= PAYMENTS =================
 elif page == "Payments":
@@ -225,7 +185,6 @@ elif page == "Payments":
 
     st.subheader("Payment Distribution")
     st.bar_chart(payment_counts)
-
     st.write(payment_counts)
 
 # ================= REPORTS =================
@@ -244,5 +203,4 @@ elif page == "Reports":
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode('utf-8')
-
     st.download_button("⬇️ Download Data", csv, "hotel_data.csv")
