@@ -25,8 +25,12 @@ h1, h2, h3 {
 # ---------------- LOAD DATA ----------------
 df = pd.read_excel("data.xlsx")
 
-df["In Date"] = pd.to_datetime(df["In Date"])
-df["Out Date"] = pd.to_datetime(df["Out Date"])
+# حل مشكلة المسافات في الأعمدة
+df.columns = df.columns.str.strip()
+
+# تحويل التواريخ
+df["In Date"] = pd.to_datetime(df["In Date"], errors='coerce')
+df["Out Date"] = pd.to_datetime(df["Out Date"], errors='coerce')
 
 # ---------------- HEADER ----------------
 st.title("🏨 Hotel Analytics Dashboard")
@@ -70,7 +74,13 @@ col2.markdown(f"<div class='card'><h3>Total Revenue</h3><h2>{int(filtered['RoomC
 
 col3.markdown(f"<div class='card'><h3>Average Price</h3><h2>{round(filtered['RoomCharge'].mean(),2)}</h2></div>", unsafe_allow_html=True)
 
-col4.markdown(f"<div class='card'><h3>Unique Guests</h3><h2>{filtered['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
+# نحسب عدد العملاء لو العمود موجود
+if "Guest Name" in filtered.columns:
+    unique_guests = filtered["Guest Name"].nunique()
+else:
+    unique_guests = "N/A"
+
+col4.markdown(f"<div class='card'><h3>Unique Guests</h3><h2>{unique_guests}</h2></div>", unsafe_allow_html=True)
 
 # ---------------- CHARTS ----------------
 st.markdown("## 📈 Insights")
