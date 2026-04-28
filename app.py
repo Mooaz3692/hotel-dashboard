@@ -3,41 +3,15 @@ import pandas as pd
 
 st.set_page_config(page_title="Hotel System", layout="wide")
 
-# ---------------- THEME FIX ----------------
+# ---------------- STYLE ----------------
 st.markdown("""
 <style>
-
-/* Background */
-.main {
-    background-color: #f6f8fb;
-}
-
-/* Dark mode fix */
-@media (prefers-color-scheme: dark) {
-    .main {
-        background-color: #0e1117;
-    }
-}
-
-/* Navbar */
-.navbar {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:12px 20px;
-    border-radius:10px;
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(10px);
-    margin-bottom:20px;
-}
+.main {background-color: #f6f8fb;}
 
 @media (prefers-color-scheme: dark) {
-    .navbar {
-        background: rgba(20,25,35,0.7);
-    }
+    .main {background-color: #0e1117;}
 }
 
-/* Cards */
 .card {
     padding:20px;
     border-radius:12px;
@@ -51,12 +25,6 @@ st.markdown("""
         color:white;
     }
 }
-
-/* Buttons */
-button {
-    border-radius:8px !important;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,10 +37,7 @@ if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1,2,1])
 
     with col2:
-        st.markdown("""
-        <div class='card'>
-        <h3 style='text-align:center;'>🔐 Login</h3>
-        """, unsafe_allow_html=True)
+        st.markdown("<div class='card'><h3 style='text-align:center;'>🔐 Login</h3>", unsafe_allow_html=True)
 
         user = st.text_input("Username")
         pwd = st.text_input("Password", type="password")
@@ -96,18 +61,18 @@ if "data" not in st.session_state:
 
 df = st.session_state.data
 
-# ---------------- NAVBAR ----------------
+# ---------------- NAV ----------------
 col1, col2, col3 = st.columns([4,3,1])
 
 with col1:
-    st.markdown("###  Hotel System")
+    st.markdown("### 🏨 Hotel System")
 
 with col2:
     page = st.segmented_control(
-    "",
-    ["Dashboard", "Guests", "Reports"],
-    default="Dashboard"
-)
+        "",
+        ["Dashboard", "Guests", "Reports"],
+        default="Dashboard"
+    )
 
 with col3:
     if st.button("Logout"):
@@ -162,16 +127,16 @@ elif page == "Guests":
 # ================= REPORTS =================
 elif page == "Reports":
 
-   st.markdown("## 📄 Reports")
+    st.markdown("## 📄 Reports")
 
-    # ---------------- KPIs ----------------
+    # KPIs
     c1, c2, c3 = st.columns(3)
 
     c1.metric("Total Revenue", int(df["RoomCharge"].sum()))
     c2.metric("Total Bookings", len(df))
     c3.metric("Avg Price", round(df["RoomCharge"].mean(), 2))
 
-    # ---------------- CHARTS ----------------
+    # Charts
     col1, col2 = st.columns(2)
 
     with col1:
@@ -182,15 +147,11 @@ elif page == "Reports":
         st.subheader("Bookings by Nationality")
         st.bar_chart(df["Nationality"].value_counts())
 
-    # ---------------- TABLE ----------------
+    # Table
     st.subheader("Data Overview")
     st.dataframe(df, use_container_width=True)
 
-    # ---------------- DOWNLOAD ----------------
+    # Download
     csv = df.to_csv(index=False).encode('utf-8')
 
-    st.download_button(
-        "⬇️ Download Data",
-        csv,
-        "hotel_data.csv"
-    )
+    st.download_button("⬇️ Download Data", csv, "hotel_data.csv")
