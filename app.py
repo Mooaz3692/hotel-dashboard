@@ -100,13 +100,14 @@ df = st.session_state.data
 col1, col2, col3 = st.columns([4,3,1])
 
 with col1:
-    st.markdown("### 🏨 Hotel System")
+    st.markdown("###  Hotel System")
 
 with col2:
     page = st.segmented_control(
-        "",
-        ["Dashboard", "Guests", "Reports"]
-    )
+    "",
+    ["Dashboard", "Guests", "Reports"],
+    default="Dashboard"
+)
 
 with col3:
     if st.button("Logout"):
