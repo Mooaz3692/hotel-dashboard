@@ -144,25 +144,26 @@ elif page == "Guests":
     st.dataframe(st.session_state.data, use_container_width=True)
 
 # ================= ROOMS =================
+# ================= ROOMS =================
 elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
     df = st.session_state.data
 
-    # كل الغرف (وهمية)
-    all_rooms = [str(i) for i in range(100, 121)]  # 100 → 120
+    # كل الغرف
+    all_rooms = [str(i) for i in range(100, 121)]
 
-    # الغرف المحجوزة من الداتا
+    # المحجوزة
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
 
     for room in all_rooms:
         if room in occupied_rooms:
-            status = "Occupied"
+            status = "🔴 Occupied"
         else:
-            status = "Available"
+            status = "🟢 Available"
 
         room_data.append({
             "Room No": room,
@@ -171,6 +172,20 @@ elif page == "Rooms":
 
     rooms_df = pd.DataFrame(room_data)
 
+    # KPIs
+    total = len(rooms_df)
+    occupied = sum(rooms_df["Status"].str.contains("Occupied"))
+    available = sum(rooms_df["Status"].str.contains("Available"))
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric("Total Rooms", total)
+    c2.metric("Occupied", occupied)
+    c3.metric("Available", available)
+
+    # عرض الجدول بدون style (مهم)
+    st.subheader("Rooms List")
+    st.dataframe(rooms_df, use_container_width=True)
     # KPIs
     total = len(rooms_df)
     occupied = (rooms_df["Status"] == "Occupied").sum()
