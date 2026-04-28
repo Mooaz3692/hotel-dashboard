@@ -162,7 +162,35 @@ elif page == "Guests":
 # ================= REPORTS =================
 elif page == "Reports":
 
-    st.markdown("## Reports")
+   st.markdown("## 📄 Reports")
 
+    # ---------------- KPIs ----------------
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric("Total Revenue", int(df["RoomCharge"].sum()))
+    c2.metric("Total Bookings", len(df))
+    c3.metric("Avg Price", round(df["RoomCharge"].mean(), 2))
+
+    # ---------------- CHARTS ----------------
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Revenue by Room Type")
+        st.bar_chart(df.groupby("Room Type")["RoomCharge"].sum())
+
+    with col2:
+        st.subheader("Bookings by Nationality")
+        st.bar_chart(df["Nationality"].value_counts())
+
+    # ---------------- TABLE ----------------
+    st.subheader("Data Overview")
+    st.dataframe(df, use_container_width=True)
+
+    # ---------------- DOWNLOAD ----------------
     csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("Download Data", csv, "hotel_data.csv")
+
+    st.download_button(
+        "⬇️ Download Data",
+        csv,
+        "hotel_data.csv"
+    )
