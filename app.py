@@ -8,14 +8,6 @@ st.markdown("""
 <style>
 .main {background-color: #eef2f7;}
 
-.sidebar .sidebar-content {
-    background-color: #1e293b;
-}
-
-.sidebar .sidebar-content h2 {
-    color: white;
-}
-
 .card {
     background: white;
     padding: 18px;
@@ -23,14 +15,15 @@ st.markdown("""
     box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
 }
 
-.login-box {
+.sidebar .sidebar-content {
+    background-color: #1e293b;
+}
+
+.login-card {
     background: white;
     padding: 30px;
     border-radius: 12px;
-    max-width: 400px;
-    margin: auto;
-    margin-top: 100px;
-    box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.08);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -42,21 +35,24 @@ if "logged_in" not in st.session_state:
 # ---------------- LOGIN PAGE ----------------
 if not st.session_state.logged_in:
 
-    st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1,2,1])
 
-    st.markdown("### 🔐 Login")
+    with col2:
+        st.markdown("<div class='login-card'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center;'>🔐 Hotel System Login</h3>", unsafe_allow_html=True)
 
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
+        user = st.text_input("Username", placeholder="Enter username")
+        pwd = st.text_input("Password", type="password", placeholder="Enter password")
 
-    if st.button("Login"):
-        if user == "admin" and pwd == "1234":
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.error("Wrong username or password")
+        if st.button("Login", use_container_width=True):
+            if user == "admin" and pwd == "1234":
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("Wrong username or password")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
     st.stop()
 
 # ---------------- LOAD DATA ----------------
@@ -75,7 +71,6 @@ page = st.sidebar.radio(
     ["Dashboard", "Guests", "Reports"]
 )
 
-# LOGOUT
 if st.sidebar.button("🚪 Logout"):
     st.session_state.logged_in = False
     st.rerun()
@@ -89,7 +84,7 @@ if page == "Dashboard":
 
     c1.markdown(f"<div class='card'><h4>Bookings</h4><h2>{len(df)}</h2></div>", unsafe_allow_html=True)
     c2.markdown(f"<div class='card'><h4>Revenue</h4><h2>{int(df['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='card'><h4>Guests</h4><h2>{df['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='card'><h4>Guests</h4><h2>{df['Guest Name'].nunique() if 'Guest Name' in df.columns else 0}</h2></div>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
@@ -106,6 +101,7 @@ elif page == "Guests":
 
     st.title("👤 Guest Management")
 
+    # ADD
     with st.expander("➕ Add Guest"):
         with st.form("add"):
             name = st.text_input("Guest Name")
@@ -123,18 +119,21 @@ elif page == "Guests":
                 st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Saved successfully")
 
+    # TABLE
     st.dataframe(df, use_container_width=True)
 
+    # SELECT
     selected = st.selectbox("Select record", df.index)
 
+    # EDIT
     with st.expander("✏️ Edit Guest"):
         row = df.loc[selected]
 
         with st.form("edit"):
-            name = st.text_input("Guest Name", row["Guest Name"])
-            nat = st.text_input("Nationality", row["Nationality"])
-            room = st.text_input("Room Type", row["Room Type"])
-            price = st.number_input("Room Charge", value=int(row["RoomCharge"]))
+            name = st.text_input("Guest Name", row.get("Guest Name", ""))
+            nat = st.text_input("Nationality", row.get("Nationality", ""))
+            room = st.text_input("Room Type", row.get("Room Type", ""))
+            price = st.number_input("Room Charge", value=int(row.get("RoomCharge", 0)))
 
             if st.form_submit_button("Update"):
                 st.session_state.data.loc[selected, "Guest Name"] = name
@@ -143,6 +142,7 @@ elif page == "Guests":
                 st.session_state.data.loc[selected, "RoomCharge"] = price
                 st.success("Updated successfully")
 
+    # DELETE
     if st.button("🗑 Delete Record"):
         st.session_state.data = df.drop(index=selected).reset_index(drop=True)
         st.success("Deleted")
