@@ -47,16 +47,21 @@ if not st.session_state.logged_in:
 
 # ---------------- DATA ----------------
 if "data" not in st.session_state:
-    df = pd.read_excel("data.xlsx")   # أول حاجة
-    df.columns = df.columns.str.strip()  # بعديها
+    df = pd.read_excel("data.xlsx")
+    df.columns = df.columns.str.strip()
 
-    # مهم جدًا
+    # تأكيد العمود
     if "Payment Type" not in df.columns:
         df["Payment Type"] = "Cash"
 
     st.session_state.data = df
 
 df = st.session_state.data
+
+# تأكيد تاني بعد كل تعديل
+if "Payment Type" not in df.columns:
+    df["Payment Type"] = "Cash"
+    st.session_state.data = df
 
 # ---------------- NAV ----------------
 col1, col2, col3 = st.columns([4,4,1])
@@ -78,8 +83,11 @@ with col3:
 
 # ================= DASHBOARD =================
 if page == "Dashboard":
+
     st.markdown("## Dashboard")
+
     c1, c2, c3 = st.columns(3)
+
     c1.markdown(f"<div class='card'><h4>Bookings</h4><h2>{len(df)}</h2></div>", unsafe_allow_html=True)
     c2.markdown(f"<div class='card'><h4>Revenue</h4><h2>{int(df['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
     c3.markdown(f"<div class='card'><h4>Guests</h4><h2>{df['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
@@ -133,7 +141,7 @@ elif page == "Guests":
                 st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Guest Added")
 
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(st.session_state.data, use_container_width=True)
 
 # ================= ROOMS =================
 elif page == "Rooms":
@@ -145,7 +153,6 @@ elif page == "Rooms":
     available = total_rooms - occupied
 
     c1, c2 = st.columns(2)
-
     c1.metric("Occupied Rooms", occupied)
     c2.metric("Available Rooms", available)
 
@@ -156,8 +163,14 @@ elif page == "Payments":
 
     st.markdown("## 💳 Payments")
 
+    df = st.session_state.data
+
+    if "Payment Type" not in df.columns:
+        df["Payment Type"] = "Cash"
+
     payment_counts = df["Payment Type"].value_counts()
 
+    st.subheader("Payment Distribution")
     st.bar_chart(payment_counts)
 
     st.write(payment_counts)
@@ -166,6 +179,8 @@ elif page == "Payments":
 elif page == "Reports":
 
     st.markdown("## 📄 Reports")
+
+    df = st.session_state.data
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Total Revenue", int(df["RoomCharge"].sum()))
