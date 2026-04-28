@@ -1,45 +1,57 @@
 import streamlit as st
 import pandas as pd
 
-# قراءة الداتا
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="Hotel Dashboard", layout="wide")
+
+# ---------------- STYLE ----------------
+st.markdown("""
+<style>
+.main {
+    background-color: #f8fafc;
+}
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+}
+h1, h2, h3 {
+    color: #1e293b;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- LOAD DATA ----------------
 df = pd.read_excel("data.xlsx")
 
-st.title("🏨 Hotel Dashboard")
-
-# تحويل التواريخ (مهم)
 df["In Date"] = pd.to_datetime(df["In Date"])
 df["Out Date"] = pd.to_datetime(df["Out Date"])
 
-# ---------------- KPIs ----------------
-st.subheader("📊 Overview")
+# ---------------- HEADER ----------------
+st.title("🏨 Hotel Analytics Dashboard")
 
-col1, col2, col3 = st.columns(3)
-
-col1.metric("عدد الحجوزات", len(df))
-col2.metric("إجمالي الإيراد", int(df["RoomCharge"].sum()))
-col3.metric("متوسط السعر", round(df["RoomCharge"].mean(), 2))
-
-# ---------------- Filters ----------------
+# ---------------- FILTERS ----------------
 st.sidebar.header("🔎 Filters")
 
 nationality = st.sidebar.multiselect(
-    "الجنسية",
+    "Nationality",
     df["Nationality"].dropna().unique(),
     default=df["Nationality"].dropna().unique()
 )
 
 room_type = st.sidebar.multiselect(
-    "نوع الغرفة",
+    "Room Type",
     df["Room Type"].dropna().unique(),
     default=df["Room Type"].dropna().unique()
 )
 
 date_range = st.sidebar.date_input(
-    "تاريخ الدخول",
+    "Check-in Date",
     [df["In Date"].min(), df["In Date"].max()]
 )
 
-# ---------------- Filtering ----------------
+# ---------------- FILTERING ----------------
 filtered = df[
     (df["Nationality"].isin(nationality)) &
     (df["Room Type"].isin(room_type)) &
@@ -47,19 +59,36 @@ filtered = df[
     (df["In Date"] <= pd.to_datetime(date_range[1]))
 ]
 
-# ---------------- Table ----------------
-st.subheader("📋 البيانات")
+# ---------------- KPIs ----------------
+st.markdown("## 📊 Overview")
 
-st.dataframe(filtered, use_container_width=True)
+col1, col2, col3, col4 = st.columns(4)
 
-# ---------------- Charts ----------------
-st.subheader("📈 تحليلات")
+col1.markdown(f"<div class='card'><h3>Total Bookings</h3><h2>{len(filtered)}</h2></div>", unsafe_allow_html=True)
 
-st.write("الحجوزات حسب الجنسية")
-st.bar_chart(filtered["Nationality"].value_counts())
+col2.markdown(f"<div class='card'><h3>Total Revenue</h3><h2>{int(filtered['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
 
-st.write("الحجوزات حسب نوع الغرفة")
-st.bar_chart(filtered["Room Type"].value_counts())
+col3.markdown(f"<div class='card'><h3>Average Price</h3><h2>{round(filtered['RoomCharge'].mean(),2)}</h2></div>", unsafe_allow_html=True)
 
-st.write("الإيراد حسب نوع الغرفة")
-st.bar_chart(filtered.groupby("Room Type")["RoomCharge"].sum())
+col4.markdown(f"<div class='card'><h3>Unique Guests</h3><h2>{filtered['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
+
+# ---------------- CHARTS ----------------
+st.markdown("## 📈 Insights")
+
+c1, c2 = st.columns(2)
+
+with c1:
+    st.markdown("### Bookings by Nationality")
+    st.bar_chart(filtered["Nationality"].value_counts())
+
+with c2:
+    st.markdown("### Revenue by Room Type")
+    st.bar_chart(filtered.groupby("Room Type")["RoomCharge"].sum())
+
+# ---------------- TABLE ----------------
+st.markdown("## 📋 Booking Details")
+
+st.dataframe(
+    filtered.sort_values(by="In Date", ascending=False),
+    use_container_width=True
+)
