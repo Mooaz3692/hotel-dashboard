@@ -3,50 +3,76 @@ import pandas as pd
 
 st.set_page_config(page_title="Hotel System", layout="wide")
 
-# ---------------- STYLE ----------------
+# ---------------- THEME FIX ----------------
 st.markdown("""
 <style>
-.main {background-color: #eef2f7;}
 
+/* Background */
+.main {
+    background-color: #f6f8fb;
+}
+
+/* Dark mode fix */
+@media (prefers-color-scheme: dark) {
+    .main {
+        background-color: #0e1117;
+    }
+}
+
+/* Navbar */
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: white;
-    padding: 12px 25px;
-    border-radius: 10px;
-    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 20px;
+    border-radius:10px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    margin-bottom:20px;
 }
 
+@media (prefers-color-scheme: dark) {
+    .navbar {
+        background: rgba(20,25,35,0.7);
+    }
+}
+
+/* Cards */
 .card {
-    background: white;
-    padding: 18px;
-    border-radius: 10px;
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+    padding:20px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.05);
 }
 
-.login-card {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0px 4px 20px rgba(0,0,0,0.08);
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: rgba(30,35,50,0.8);
+        color:white;
+    }
 }
+
+/* Buttons */
+button {
+    border-radius:8px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN STATE ----------------
+# ---------------- LOGIN ----------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# ---------------- LOGIN ----------------
 if not st.session_state.logged_in:
 
     col1, col2, col3 = st.columns([1,2,1])
 
     with col2:
-        st.markdown("<div class='login-card'>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align:center;'>🔐 Hotel System Login</h3>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class='card'>
+        <h3 style='text-align:center;'>🔐 Login</h3>
+        """, unsafe_allow_html=True)
 
         user = st.text_input("Username")
         pwd = st.text_input("Password", type="password")
@@ -56,13 +82,13 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.rerun()
             else:
-                st.error("Wrong username or password")
+                st.error("Wrong credentials")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.stop()
 
-# ---------------- LOAD DATA ----------------
+# ---------------- DATA ----------------
 if "data" not in st.session_state:
     df = pd.read_excel("data.xlsx")
     df.columns = df.columns.str.strip()
@@ -71,16 +97,15 @@ if "data" not in st.session_state:
 df = st.session_state.data
 
 # ---------------- NAVBAR ----------------
-col1, col2, col3 = st.columns([6,2,1])
+col1, col2, col3 = st.columns([4,3,1])
 
 with col1:
     st.markdown("### 🏨 Hotel System")
 
 with col2:
-    page = st.radio(
+    page = st.segmented_control(
         "",
-        ["Dashboard", "Guests", "Reports"],
-        horizontal=True
+        ["Dashboard", "Guests", "Reports"]
     )
 
 with col3:
@@ -112,9 +137,9 @@ if page == "Dashboard":
 # ================= GUESTS =================
 elif page == "Guests":
 
-    st.markdown("## Guest Management")
+    st.markdown("## Guests")
 
-    with st.expander("➕ Add Guest"):
+    with st.expander("Add Guest"):
         with st.form("add"):
             name = st.text_input("Guest Name")
             nat = st.text_input("Nationality")
@@ -133,36 +158,10 @@ elif page == "Guests":
 
     st.dataframe(df, use_container_width=True)
 
-    selected = st.selectbox("Select record", df.index)
-
-    with st.expander("✏️ Edit Guest"):
-        row = df.loc[selected]
-
-        with st.form("edit"):
-            name = st.text_input("Guest Name", row["Guest Name"])
-            nat = st.text_input("Nationality", row["Nationality"])
-            room = st.text_input("Room Type", row["Room Type"])
-            price = st.number_input("Room Charge", value=int(row["RoomCharge"]))
-
-            if st.form_submit_button("Update"):
-                st.session_state.data.loc[selected, "Guest Name"] = name
-                st.session_state.data.loc[selected, "Nationality"] = nat
-                st.session_state.data.loc[selected, "Room Type"] = room
-                st.session_state.data.loc[selected, "RoomCharge"] = price
-                st.success("Updated")
-
-    if st.button("Delete"):
-        st.session_state.data = df.drop(index=selected).reset_index(drop=True)
-        st.success("Deleted")
-
 # ================= REPORTS =================
 elif page == "Reports":
 
     st.markdown("## Reports")
 
     csv = df.to_csv(index=False).encode('utf-8')
-
     st.download_button("Download Data", csv, "hotel_data.csv")
-
-    st.subheader("Summary")
-    st.write(df.describe())
