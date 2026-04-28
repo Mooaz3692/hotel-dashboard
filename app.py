@@ -7,25 +7,44 @@ st.set_page_config(page_title="Hotel System", layout="wide")
 st.markdown("""
 <style>
 .main {background-color: #eef2f7;}
+
+.sidebar .sidebar-content {
+    background-color: #1e293b;
+}
+
+.sidebar .sidebar-content h2 {
+    color: white;
+}
+
 .card {
     background: white;
     padding: 18px;
     border-radius: 10px;
     box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
 }
-.header {
-    font-size:22px;
-    font-weight:600;
+
+.login-box {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 400px;
+    margin: auto;
+    margin-top: 100px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN STATE ----------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# ---------------- LOGIN PAGE ----------------
 if not st.session_state.logged_in:
-    st.title("🔐 Hotel System Login")
+
+    st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+
+    st.markdown("### 🔐 Login")
 
     user = st.text_input("Username")
     pwd = st.text_input("Password", type="password")
@@ -35,8 +54,9 @@ if not st.session_state.logged_in:
             st.session_state.logged_in = True
             st.rerun()
         else:
-            st.error("Invalid credentials")
+            st.error("Wrong username or password")
 
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # ---------------- LOAD DATA ----------------
@@ -47,18 +67,29 @@ if "data" not in st.session_state:
 
 df = st.session_state.data
 
-# ---------------- NAV ----------------
-tab1, tab2, tab3 = st.tabs(["Dashboard", "Guests", "Reports"])
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("🏨 Hotel System")
+
+page = st.sidebar.radio(
+    "Navigation",
+    ["Dashboard", "Guests", "Reports"]
+)
+
+# LOGOUT
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
 
 # ================= DASHBOARD =================
-with tab1:
-    st.markdown("## 📊 Dashboard")
+if page == "Dashboard":
+
+    st.title("📊 Dashboard")
 
     c1, c2, c3 = st.columns(3)
 
-    c1.markdown(f"<div class='card'><div class='header'>Bookings</div><h2>{len(df)}</h2></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='card'><div class='header'>Revenue</div><h2>{int(df['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='card'><div class='header'>Guests</div><h2>{df['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
+    c1.markdown(f"<div class='card'><h4>Bookings</h4><h2>{len(df)}</h2></div>", unsafe_allow_html=True)
+    c2.markdown(f"<div class='card'><h4>Revenue</h4><h2>{int(df['RoomCharge'].sum())}</h2></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='card'><h4>Guests</h4><h2>{df['Guest Name'].nunique()}</h2></div>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
@@ -71,10 +102,10 @@ with tab1:
         st.bar_chart(df.groupby("Room Type")["RoomCharge"].sum())
 
 # ================= GUESTS =================
-with tab2:
-    st.markdown("## 👤 Guest Management")
+elif page == "Guests":
 
-    # ADD
+    st.title("👤 Guest Management")
+
     with st.expander("➕ Add Guest"):
         with st.form("add"):
             name = st.text_input("Guest Name")
@@ -92,13 +123,10 @@ with tab2:
                 st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Saved successfully")
 
-    # TABLE
     st.dataframe(df, use_container_width=True)
 
-    # SELECT
     selected = st.selectbox("Select record", df.index)
 
-    # EDIT
     with st.expander("✏️ Edit Guest"):
         row = df.loc[selected]
 
@@ -115,20 +143,18 @@ with tab2:
                 st.session_state.data.loc[selected, "RoomCharge"] = price
                 st.success("Updated successfully")
 
-    # DELETE
     if st.button("🗑 Delete Record"):
         st.session_state.data = df.drop(index=selected).reset_index(drop=True)
         st.success("Deleted")
 
 # ================= REPORTS =================
-with tab3:
-    st.markdown("## 📄 Reports")
+elif page == "Reports":
 
-    st.write("Download full dataset")
+    st.title("📄 Reports")
 
     csv = df.to_csv(index=False).encode('utf-8')
 
-    st.download_button("⬇️ Export CSV", csv, "hotel_data.csv")
+    st.download_button("⬇️ Export Data", csv, "hotel_data.csv")
 
-    st.subheader("Quick Summary")
+    st.subheader("Summary")
     st.write(df.describe())
