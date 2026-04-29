@@ -213,57 +213,57 @@ elif page == "Reports":
 
     # ================= 🔥 PDF PRINT =================
     def generate_pdf(data):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    elements = []
-    styles = getSampleStyleSheet()
-
-    # 🖼️ Logo
-    try:
-        img = Image("logo.jpeg", width=120, height=60)
-        elements.append(img)
-    except:
-        pass
-
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph("Hotel Report", styles['Title']))
-    elements.append(Spacer(1, 20))
-
-    # 🔥 أهم تعديل هنا
-    cols = [
-        "Guest No",
-        "Guest Name",
-        "Room No",
-        "Room Type",
-        "In Date",
-        "Out Date",
-        "RoomCharge"
-    ]
-
-    clean_df = data[cols].copy()
-
-    # 🧹 تنظيف
-    clean_df = clean_df.fillna("")
-    clean_df["In Date"] = clean_df["In Date"].astype(str).str[:10]
-    clean_df["Out Date"] = clean_df["Out Date"].astype(str).str[:10]
-
-    table_data = [list(clean_df.columns)] + clean_df.values.tolist()
-
-    table = Table(table_data, repeatRows=1)
-
-    table.setStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('FONTSIZE', (0,0), (-1,-1), 8),
-    ])
-
-    elements.append(table)
-    doc.build(elements)
-
-    buffer.seek(0)
-    return buffer
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+    
+        # 🖼️ Logo
+        try:
+            img = Image("logo.jpeg", width=120, height=60)
+            elements.append(img)
+        except:
+            pass
+    
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("Hotel Report", styles['Title']))
+        elements.append(Spacer(1, 20))
+    
+        # 🔥 أهم تعديل هنا
+        cols = [
+            "Guest No",
+            "Guest Name",
+            "Room No",
+            "Room Type",
+            "In Date",
+            "Out Date",
+            "RoomCharge"
+        ]
+    
+        clean_df = data[cols].copy()
+    
+        # 🧹 تنظيف
+        clean_df = clean_df.fillna("")
+        clean_df["In Date"] = clean_df["In Date"].astype(str).str[:10]
+        clean_df["Out Date"] = clean_df["Out Date"].astype(str).str[:10]
+    
+        table_data = [list(clean_df.columns)] + clean_df.values.tolist()
+    
+        table = Table(table_data, repeatRows=1)
+    
+        table.setStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.darkblue),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+        ])
+    
+        elements.append(table)
+        doc.build(elements)
+    
+        buffer.seek(0)
+        return buffer
 
     if st.button("🖨️ Print Report (PDF)"):
         pdf = generate_pdf(filtered_df.head(25))
