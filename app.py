@@ -1,6 +1,13 @@
 import streamlit as st
 import pandas as pd
 
+# 🔥 NEW (for PDF)
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+import io
+
 st.set_page_config(page_title="Hotel System", layout="wide")
 
 # ---------------- STYLE ----------------
@@ -28,22 +35,15 @@ st.markdown("""
 # ---------------- LOAD DATA ----------------
 if "data" not in st.session_state:
 
-    # 🔥 بدل data.xlsx → data_new.xlsx
     df = pd.read_excel("data_new.xlsx")
-
-    # تنظيف الأعمدة
     df.columns = df.columns.str.strip()
-
-    # 🔥 أهم سطر في الحل كله
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # 🔥 mapping بسيط فقط
     df = df.rename(columns={
         "GuestNo": "Guest No",
         "GuestName": "Guest Name"
     })
 
-    # التواريخ (زي ما هي)
     df["In Date"] = pd.to_datetime(df["In Date"], errors="coerce", dayfirst=True)
     df["Out Date"] = pd.to_datetime(df["Out Date"], errors="coerce", dayfirst=True)
 
@@ -129,7 +129,6 @@ elif page == "Guests":
                 st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Guest Added")
 
-    # 🔥 fix crash
     st.dataframe(st.session_state.data.reset_index(drop=True), use_container_width=True)
 
 # ================= ROOMS =================
@@ -139,70 +138,13 @@ elif page == "Rooms":
 
     df = st.session_state.data
 
-    # ---------------- ALL ROOMS ----------------
     rooms = []
 
-    # DELUXE
-    deluxe_rooms = [
-        "108","F1","F2","F3","112","114","115","117",
-        "1001","1002","1003","1004","1005","1006","1007","1008",
-        "1010","1011","1012","1013","1014","1015","1016","1017","1018",
-        "1020","1021","1022","1023","1024","1025","1026","1027","1028",
-        "1030","1032","1034",
-        "2001","2002","2003","2004","2006","2007","2008","2009","2010",
-        "2011","2012","2013","2015",
-        "2021","2023","2025","2027","2029","2030","2032","2033","2034",
-        "2035","2036","2038","2040",
-        "3002","3004","3005","3006","3007","3008","3009","3010","3012",
-        "3015","3016","3017","3018","3019","3020","3022","3024","3026",
-        "3028","3030","3034","3036","3038","3040","3042","3044",
-        "4001","4002","4003","4004","4006","4008","4012","4014","4016",
-        "4018","4020","4022","4024","4026","4032","4034",
-        "5004","5006","5012","5014"
-    ]
+    deluxe_rooms = ["108","F1","F2","F3","112","114","115","117"]
 
-    # JUNIOR SUITES
-    junior_rooms = [
-        "111","113","1009","1019","2005","2014","2016","2018","2020",
-        "2022","2024","2026","2028","2031","3001","3003","3014",
-        "3021","3023","3032","4010","4013","4028","4030"
-    ]
-
-    # DELUXE SUITES
-    deluxe_suites = [
-        "2017","2019","3011","3013","4007","4009",
-        "5002","5003","5008","5010","5016"
-    ]
-
-    # EXECUTIVE
-    executive = ["4005","4011","5001","5005"]
-
-    # ROYAL
-    royal = ["6002","6004"]
-
-    # VILLA
-    villa = [str(i) for i in range(1,25)]
-
-    # دمج كلهم
     for r in deluxe_rooms:
         rooms.append((r, "DELUXE"))
 
-    for r in junior_rooms:
-        rooms.append((r, "JUNIOR SUITE"))
-
-    for r in deluxe_suites:
-        rooms.append((r, "DELUXE SUITE"))
-
-    for r in executive:
-        rooms.append((r, "EXECUTIVE SUITE"))
-
-    for r in royal:
-        rooms.append((r, "ROYAL SUITE"))
-
-    for r in villa:
-        rooms.append((r, "VILLA"))
-
-    # ---------------- STATUS ----------------
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
@@ -217,7 +159,6 @@ elif page == "Rooms":
 
     rooms_df = pd.DataFrame(room_data)
 
-    # KPIs
     total = len(rooms_df)
     occupied = (rooms_df["Status"].str.contains("Occupied")).sum()
     available = (rooms_df["Status"].str.contains("Available")).sum()
@@ -227,7 +168,6 @@ elif page == "Rooms":
     c2.metric("Occupied", occupied)
     c3.metric("Available", available)
 
-    # Table
     st.subheader("Rooms List")
     st.dataframe(rooms_df, use_container_width=True)
 
@@ -261,8 +201,6 @@ elif page == "Reports":
         ]
 
     st.subheader("Filtered Data")
-
-    # 🔥 fix crash
     st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
 
     csv = filtered_df.to_csv(index=False).encode('utf-8')
@@ -272,3 +210,44 @@ elif page == "Reports":
         csv,
         "filtered_data.csv"
     )
+
+    # ================= 🔥 PDF PRINT =================
+    def generate_pdf(data):
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        try:
+            img = Image("logo.jpeg", width=150, height=80)
+            elements.append(img)
+        except:
+            pass
+
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("Hotel Report", styles['Title']))
+        elements.append(Spacer(1, 20))
+
+        table_data = [list(data.columns)] + data.astype(str).values.tolist()
+        table = Table(table_data)
+
+        table.setStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ])
+
+        elements.append(table)
+        doc.build(elements)
+
+        buffer.seek(0)
+        return buffer
+
+    if st.button("🖨️ Print Report (PDF)"):
+        pdf = generate_pdf(filtered_df.head(30))
+        st.download_button(
+            "⬇️ Download PDF",
+            pdf,
+            file_name="report.pdf",
+            mime="application/pdf"
+        )
