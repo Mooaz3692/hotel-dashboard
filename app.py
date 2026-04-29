@@ -45,7 +45,7 @@ df = st.session_state.data
 col1, col2 = st.columns([4,4])
 
 with col1:
-    st.markdown("### 🏨 Hotel System")
+    st.image("logo.jpeg", width=180)
 
 with col2:
     page = st.segmented_control(
