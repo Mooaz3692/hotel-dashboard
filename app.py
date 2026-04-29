@@ -123,28 +123,98 @@ elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
-    rooms = [
-        ("108","DELUXE"),("111","JUNIOR"),("113","JUNIOR"),
-        ("112","DELUXE"),("114","DELUXE"),("115","DELUXE"),
-        ("117","DELUXE"),("1001","DELUXE"),("1002","DELUXE"),
-        ("6002","ROYAL"),("6004","ROYAL"),
-        ("1","VILLA"),("2","VILLA"),("3","VILLA")
+    df = st.session_state.data
+
+    # ---------------- ALL ROOMS ----------------
+    rooms = []
+
+    # DELUXE
+    deluxe_rooms = [
+        "108","F1","F2","F3","112","114","115","117",
+        "1001","1002","1003","1004","1005","1006","1007","1008",
+        "1010","1011","1012","1013","1014","1015","1016","1017","1018",
+        "1020","1021","1022","1023","1024","1025","1026","1027","1028",
+        "1030","1032","1034",
+        "2001","2002","2003","2004","2006","2007","2008","2009","2010",
+        "2011","2012","2013","2015",
+        "2021","2023","2025","2027","2029","2030","2032","2033","2034",
+        "2035","2036","2038","2040",
+        "3002","3004","3005","3006","3007","3008","3009","3010","3012",
+        "3015","3016","3017","3018","3019","3020","3022","3024","3026",
+        "3028","3030","3034","3036","3038","3040","3042","3044",
+        "4001","4002","4003","4004","4006","4008","4012","4014","4016",
+        "4018","4020","4022","4024","4026","4032","4034",
+        "5004","5006","5012","5014"
     ]
 
+    # JUNIOR SUITES
+    junior_rooms = [
+        "111","113","1009","1019","2005","2014","2016","2018","2020",
+        "2022","2024","2026","2028","2031","3001","3003","3014",
+        "3021","3023","3032","4010","4013","4028","4030"
+    ]
+
+    # DELUXE SUITES
+    deluxe_suites = [
+        "2017","2019","3011","3013","4007","4009",
+        "5002","5003","5008","5010","5016"
+    ]
+
+    # EXECUTIVE
+    executive = ["4005","4011","5001","5005"]
+
+    # ROYAL
+    royal = ["6002","6004"]
+
+    # VILLA
+    villa = [str(i) for i in range(1,25)]
+
+    # دمج كلهم
+    for r in deluxe_rooms:
+        rooms.append((r, "DELUXE"))
+
+    for r in junior_rooms:
+        rooms.append((r, "JUNIOR SUITE"))
+
+    for r in deluxe_suites:
+        rooms.append((r, "DELUXE SUITE"))
+
+    for r in executive:
+        rooms.append((r, "EXECUTIVE SUITE"))
+
+    for r in royal:
+        rooms.append((r, "ROYAL SUITE"))
+
+    for r in villa:
+        rooms.append((r, "VILLA"))
+
+    # ---------------- STATUS ----------------
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
+
     for room, rtype in rooms:
         status = "🔴 Occupied" if room in occupied_rooms else "🟢 Available"
-        room_data.append({"Room No": room, "Type": rtype, "Status": status})
+        room_data.append({
+            "Room No": room,
+            "Type": rtype,
+            "Status": status
+        })
 
     rooms_df = pd.DataFrame(room_data)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Rooms", len(rooms_df))
-    c2.metric("Occupied", sum(rooms_df["Status"].str.contains("Occupied")))
-    c3.metric("Available", sum(rooms_df["Status"].str.contains("Available")))
+    # KPIs
+    total = len(rooms_df)
+    occupied = (rooms_df["Status"].str.contains("Occupied")).sum()
+    available = (rooms_df["Status"].str.contains("Available")).sum()
 
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Rooms", total)
+    c2.metric("Occupied", occupied)
+    c3.metric("Available", available)
+
+    # Table
+    st.subheader("Rooms List")
     st.dataframe(rooms_df, use_container_width=True)
 
 # ================= PAYMENTS =================
