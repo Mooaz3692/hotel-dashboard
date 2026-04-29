@@ -46,6 +46,7 @@ col1, col2 = st.columns([4,4])
 
 with col1:
     st.image("logo.jpeg", width=180)
+    st.markdown("### 🏨 Hotel System")
 
 with col2:
     page = st.segmented_control(
