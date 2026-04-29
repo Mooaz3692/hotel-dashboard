@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import random
 
 st.set_page_config(page_title="Hotel System", layout="wide")
 
@@ -144,18 +143,34 @@ elif page == "Rooms":
 
     df = st.session_state.data
 
-    all_rooms = [str(i) for i in range(100, 121)]
+    # 🔥 الرومات الحقيقية
+    rooms = [
+        ("108","DELUXE"),("111","JUNIOR"),("113","JUNIOR"),("112","DELUXE"),
+        ("114","DELUXE"),("115","DELUXE"),("117","DELUXE"),
+        ("1001","DELUXE"),("1002","DELUXE"),("1003","DELUXE"),
+        ("1004","DELUXE"),("1005","DELUXE"),("1006","DELUXE"),
+        ("1007","DELUXE"),("1008","DELUXE"),
+        ("6002","ROYAL"),("6004","ROYAL"),
+        ("1","VILLA"),("2","VILLA"),("3","VILLA"),("4","VILLA"),
+        ("5","VILLA"),("6","VILLA"),("7","VILLA"),("8","VILLA"),
+        ("9","VILLA"),("10","VILLA")
+    ]
+
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
 
-    for room in all_rooms:
+    for room, rtype in rooms:
         if room in occupied_rooms:
             status = "🔴 Occupied"
         else:
             status = "🟢 Available"
 
-        room_data.append({"Room No": room, "Status": status})
+        room_data.append({
+            "Room No": room,
+            "Type": rtype,
+            "Status": status
+        })
 
     rooms_df = pd.DataFrame(room_data)
 
@@ -176,14 +191,11 @@ elif page == "Payments":
 
     st.markdown("## 💳 Payments")
 
-    df = st.session_state.data
-
     if "Payment Type" not in df.columns:
         df["Payment Type"] = "Cash"
 
     payment_counts = df["Payment Type"].value_counts()
 
-    st.subheader("Payment Distribution")
     st.bar_chart(payment_counts)
     st.write(payment_counts)
 
@@ -192,14 +204,11 @@ elif page == "Reports":
 
     st.markdown("## 📄 Reports")
 
-    df = st.session_state.data
-
     c1, c2, c3 = st.columns(3)
     c1.metric("Total Revenue", int(df["RoomCharge"].sum()))
     c2.metric("Total Bookings", len(df))
     c3.metric("Avg Price", round(df["RoomCharge"].mean(), 2))
 
-    st.subheader("Data Overview")
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode('utf-8')
