@@ -28,12 +28,13 @@ st.markdown("""
 # ---------------- LOAD DATA ----------------
 if "data" not in st.session_state:
 
-    # 🔥 نقرأ الشيت الجديد
     df = pd.read_excel("data_new.xlsx")
 
+    # تنظيف الأعمدة
     df.columns = df.columns.str.strip()
+    df = df.loc[:, ~df.columns.duplicated()]  # 🔥 حل المشكلة الأساسية
 
-    # 🔥 Mapping للأسماء الجديدة
+    # Mapping
     df = df.rename(columns={
         "GuestNo": "Guest No",
         "GuestName": "Guest Name",
@@ -41,9 +42,12 @@ if "data" not in st.session_state:
         "CheckOutTime": "Check Out"
     })
 
-    # 🔥 تحويل التواريخ
-    df["In Date"] = pd.to_datetime(df["In Date"], errors="coerce", dayfirst=True)
-    df["Out Date"] = pd.to_datetime(df["Out Date"], errors="coerce", dayfirst=True)
+    # تحويل تواريخ
+    df["In Date"] = pd.to_datetime(df["In Date"], errors="coerce")
+    df["Out Date"] = pd.to_datetime(df["Out Date"], errors="coerce")
+
+    # تحويل أرقام
+    df["RoomCharge"] = pd.to_numeric(df["RoomCharge"], errors="coerce").fillna(0)
 
     # Payment fallback
     if "Payment Type" not in df.columns:
@@ -128,18 +132,20 @@ elif page == "Guests":
                 st.session_state.data = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Guest Added")
 
-    st.dataframe(st.session_state.data, use_container_width=True)
+    st.dataframe(st.session_state.data.reset_index(drop=True), use_container_width=True)
 
 # ================= ROOMS =================
 elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
+    # 🔥 الرومات الحقيقية (اختصار – كمل باقي اللي عندك)
+    all_rooms = list(set(df["Room No"].dropna().astype(str)))
+
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
-    total_rooms = 21  # زي ما انت عامل قبل كده
-
     occupied = len(occupied_rooms)
+    total_rooms = len(all_rooms)
     available = total_rooms - occupied
 
     c1, c2, c3 = st.columns(3)
@@ -172,12 +178,12 @@ elif page == "Reports":
     if start_date and end_date:
         filtered_df = df[
             (df["In Date"].notna()) &
-            (df["In Date"] >= pd.to_datetime(start_date)) &
-            (df["In Date"] <= pd.to_datetime(end_date))
+            (df["In Date"] >= pd.Timestamp(start_date)) &
+            (df["In Date"] <= pd.Timestamp(end_date))
         ]
 
     st.subheader("Filtered Data")
-    st.dataframe(filtered_df, use_container_width=True)
+    st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
 
     csv = filtered_df.to_csv(index=False).encode('utf-8')
 
