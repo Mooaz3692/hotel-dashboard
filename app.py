@@ -29,7 +29,7 @@ st.markdown("""
 if "data" not in st.session_state:
 
     # 🔥 نقرأ الشيت الجديد
-    df = pd.read_excel("data_new.xls")
+    df = pd.read_excel("data_new.xlsx")
 
     df.columns = df.columns.str.strip()
 
