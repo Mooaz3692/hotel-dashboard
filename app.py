@@ -25,29 +25,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN ----------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.markdown("<div class='card'><h3 style='text-align:center;'>🔐 Login</h3>", unsafe_allow_html=True)
-        user = st.text_input("Username")
-        pwd = st.text_input("Password", type="password")
-        if st.button("Login", use_container_width=True):
-            if user == "admin" and pwd == "1234":
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.error("Wrong credentials")
-        st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
-
 # ---------------- DATA ----------------
 if "data" not in st.session_state:
     df = pd.read_excel("data.xlsx")
     df.columns = df.columns.str.strip()
+
+    # تحويل التواريخ
+    df["In Date"] = pd.to_datetime(df["In Date"], errors="coerce")
+    df["Out Date"] = pd.to_datetime(df["Out Date"], errors="coerce")
 
     if "Payment Type" not in df.columns:
         df["Payment Type"] = "Cash"
@@ -57,7 +42,7 @@ if "data" not in st.session_state:
 df = st.session_state.data
 
 # ---------------- NAV ----------------
-col1, col2, col3 = st.columns([4,4,1])
+col1, col2 = st.columns([4,4])
 
 with col1:
     st.markdown("### 🏨 Hotel System")
@@ -68,11 +53,6 @@ with col2:
         ["Dashboard", "Guests", "Rooms", "Payments", "Reports"],
         default="Dashboard"
     )
-
-with col3:
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
 
 # ================= DASHBOARD =================
 if page == "Dashboard":
@@ -141,58 +121,32 @@ elif page == "Rooms":
 
     st.markdown("## 🏨 Rooms Status")
 
-    df = st.session_state.data
-
-    # 🔥 الرومات الحقيقية
-    rooms = [
-        ("108","DELUXE"),("111","JUNIOR"),("113","JUNIOR"),("112","DELUXE"),
-        ("114","DELUXE"),("115","DELUXE"),("117","DELUXE"),
-        ("1001","DELUXE"),("1002","DELUXE"),("1003","DELUXE"),
-        ("1004","DELUXE"),("1005","DELUXE"),("1006","DELUXE"),
-        ("1007","DELUXE"),("1008","DELUXE"),
-        ("6002","ROYAL"),("6004","ROYAL"),
-        ("1","VILLA"),("2","VILLA"),("3","VILLA"),("4","VILLA"),
-        ("5","VILLA"),("6","VILLA"),("7","VILLA"),("8","VILLA"),
-        ("9","VILLA"),("10","VILLA")
-    ]
+    rooms = [("108","DELUXE"),("111","JUNIOR"),("113","JUNIOR"),("112","DELUXE"),
+             ("114","DELUXE"),("115","DELUXE"),("117","DELUXE"),
+             ("1001","DELUXE"),("1002","DELUXE"),("1003","DELUXE"),
+             ("6002","ROYAL"),("6004","ROYAL"),
+             ("1","VILLA"),("2","VILLA"),("3","VILLA")]
 
     occupied_rooms = df["Room No"].dropna().astype(str).unique()
 
     room_data = []
-
     for room, rtype in rooms:
-        if room in occupied_rooms:
-            status = "🔴 Occupied"
-        else:
-            status = "🟢 Available"
-
-        room_data.append({
-            "Room No": room,
-            "Type": rtype,
-            "Status": status
-        })
+        status = "🔴 Occupied" if room in occupied_rooms else "🟢 Available"
+        room_data.append({"Room No": room, "Type": rtype, "Status": status})
 
     rooms_df = pd.DataFrame(room_data)
 
-    total = len(rooms_df)
-    occupied = sum(rooms_df["Status"].str.contains("Occupied"))
-    available = sum(rooms_df["Status"].str.contains("Available"))
-
     c1, c2, c3 = st.columns(3)
-    c1.metric("Total Rooms", total)
-    c2.metric("Occupied", occupied)
-    c3.metric("Available", available)
+    c1.metric("Total Rooms", len(rooms_df))
+    c2.metric("Occupied", sum(rooms_df["Status"].str.contains("Occupied")))
+    c3.metric("Available", sum(rooms_df["Status"].str.contains("Available")))
 
-    st.subheader("Rooms List")
     st.dataframe(rooms_df, use_container_width=True)
 
 # ================= PAYMENTS =================
 elif page == "Payments":
 
     st.markdown("## 💳 Payments")
-
-    if "Payment Type" not in df.columns:
-        df["Payment Type"] = "Cash"
 
     payment_counts = df["Payment Type"].value_counts()
 
@@ -204,12 +158,28 @@ elif page == "Reports":
 
     st.markdown("## 📄 Reports")
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Revenue", int(df["RoomCharge"].sum()))
-    c2.metric("Total Bookings", len(df))
-    c3.metric("Avg Price", round(df["RoomCharge"].mean(), 2))
+    # 🔥 الفلترة
+    col1, col2 = st.columns(2)
 
-    st.dataframe(df, use_container_width=True)
+    start_date = col1.date_input("From Date")
+    end_date = col2.date_input("To Date")
 
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("⬇️ Download Data", csv, "hotel_data.csv")
+    filtered_df = df.copy()
+
+    if start_date and end_date:
+        filtered_df = df[
+            (df["In Date"] >= pd.to_datetime(start_date)) &
+            (df["In Date"] <= pd.to_datetime(end_date))
+        ]
+
+    st.subheader("Filtered Data")
+    st.dataframe(filtered_df, use_container_width=True)
+
+    # تحميل الداتا
+    csv = filtered_df.to_csv(index=False).encode('utf-8')
+
+    st.download_button(
+        "⬇️ Download Filtered Data",
+        csv,
+        "filtered_data.csv"
+    )
